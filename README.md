@@ -1,89 +1,98 @@
-# Windows Memory Forensics with Volatility 3
+# Windows Memory Forensics: Volatility 3 Analysis
 
 ## Project Overview
-This project looks at analysing a Windows 10 memory dump using **Volatility 3** on a REMnux VM.  
-The goal was to simulate an incident where malware is suspected and then investigate the dump to confirm what happened.  
-
-I captured the RAM dump from a Windows 10 VM using **FTK Imager**, then ran Volatility 3 to dig into processes, network activity, and command lines.  
+For this project I used [Volatility 3](https://github.com/volatilityfoundation/volatility3) on REMnux to investigate a Windows 10 memory dump.  
+The aim was to simulate a DFIR workflow: identify suspicious processes, recover command-line arguments, extract encoded payloads, and decode them safely.  
+This helped me practice memory forensics, artifact hunting, and documenting findings.
 
 ---
 
 ## Setup
+**Environment**
+- Host: REMnux VM with Volatility 3 Framework 2.7.0
+- Image: Windows 10 memory dump (`memdump.dmp`)
+- Target: `powershell.exe` (PID 4296)
 
-1. **Windows 10 Victim VM**
-   - Simulated malware execution (PowerShell with an encoded command).
-   - Took a memory snapshot using FTK Imager.
-
-2. **Analysis Environment**
-   - Used **REMnux** (DFIR-focused Linux distro).
-   - Installed Volatility 3 (preloaded on REMnux).
-   - Verified it worked:  
-     ```bash
-     python3 vol.py -h
-     ```
+**Tools**
+- Volatility 3 (core plugins: `psscan`, `pstree`, `cmdline`, `strings`)
+- `strings` for UTF-16LE scanning
+- `base64` + `iconv` for safe offline decoding
+- `sha256sum` for image integrity
 
 ---
 
-## Analysis
+## Investigation
 
-### Process Listing
-Command:
-```bash
-python3 vol.py -f memdump.raw windows.pslist
+### Process Discovery
+- `pslist` showed no PowerShell process.  
+- `psscan` revealed PID 4296 (`powershell.exe`) that had already exited.  
+- `pstree` showed the lineage: parent PID 4308, child `conhost.exe`.
+
+**Screenshots:**  
+- `psscan_pid4296.png`  
+- `pstree_pid4296.png`
+
+---
+
+### Command-Line Arguments
+- `cmdline` returned only the executable path (`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`).  
+- No `-EncodedCommand` present, a common limitation when processes exit.
+
+**Screenshot:**  
+- `04-cmdline-hits.png`
+
+---
+
+### EncodedCommand Discovery
+- Ran a UTF-16LE string sweep across the image.  
+- Found repeated instances of PowerShell launched with `-EncodedCommand` and a long base64 blob.
+
+**Screenshot:**  
+- `05-strings-encodedcommand.png`
+
+---
+
+### Decoded Payload
+- Extracted the base64 blob.  
+- Decoded safely (UTF-16LE → UTF-8).  
+- Payload was a benign test script:
+
+```powershell
+Write-Output "DFIR TEST RUN" | Out-File C:\Temp\ps_test.txt -Encoding UTF8
+Start-Sleep -Seconds 600
 ```
-Screenshot: show the running processes, highlight the suspicious `powershell.exe`.
+
+**Screenshot:**  
+- `06-decoded_payload_snippet.png`
 
 ---
 
-### Process Tree
-Command:
-```bash
-python3 vol.py -f memdump.raw windows.pstree
-```
-Screenshot: capture the parent/child relationship where PowerShell was spawned.
-
----
-
-### Command Line Arguments
-Command:
-```bash
-python3 vol.py -f memdump.raw windows.cmdline
-```
-Screenshot: show the `-EncodedCommand` argument (this confirms malicious activity).  
-Redact any sensitive file paths if needed.
-
----
-
-### Network Connections
-Command:
-```bash
-python3 vol.py -f memdump.raw windows.netscan
-```
-Screenshot: capture any outbound connection linked to PowerShell or suspicious processes.
-
----
-
-## Findings
-
-- Discovered a **PowerShell process** with an `-EncodedCommand` argument.
-- This indicates possible script-based malware execution.
-- The process tree shows PowerShell was spawned abnormally, suggesting attacker activity.
-- Network connections showed [fill in what you found].
+## Results
+- `psscan` recovered the hidden PowerShell process (PID 4296).  
+- `pstree` confirmed parent/child relationships.  
+- Strings analysis uncovered the encoded payload arguments.  
+- Decoded script matched expected test behavior (output file + sleep).  
+- SHA256 hash recorded for image integrity.
 
 ---
 
 ## Lessons Learned
-
-- Learned how to acquire a memory dump safely with FTK Imager.
-- Practiced running Volatility 3 commands and interpreting the output.
-- Saw how PowerShell misuse can be spotted in memory (not just logs).
-- Realised the importance of correlating process, command line, and network data.
+- `pslist` alone is not reliable — `psscan` is needed for terminated processes.  
+- Encoded PowerShell payloads remain recoverable in memory as UTF-16LE.  
+- Even negative findings (like empty `cmdline`) give useful context.  
+- Safe offline decoding avoids execution risks.  
 
 ---
 
 ## Next Steps
+- Test Volatility plugins like `envars`, `handles`, `vadinfo`, and `malfind` on more realistic samples.  
+- Combine with registry hive analysis (`printkey`) for persistence detection.  
+- Document comparisons across multiple dumps (before/after infection).  
+- Extend project with a Yara scan for known indicators.
 
-- Try extracting the encoded PowerShell command from memory.
-- Add YARA scanning with Volatility to hunt for known malware strings.
-- Compare memory analysis with log-based detection (link this project to Sentinel lab).
+---
 
+## Author
+**Ayrton Cook**  
+BSc Computer Science with Year in Industry (Cybersecurity focus)  
+University of East Anglia
