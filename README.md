@@ -3,7 +3,7 @@
 ## Project Overview
 For this project I used [Volatility 3](https://github.com/volatilityfoundation/volatility3) on REMnux to investigate a Windows 10 memory dump.  
 The aim was to simulate a DFIR workflow: identify suspicious processes, recover command-line arguments, extract encoded payloads, and decode them safely.  
-This helped me practice memory forensics, artifact hunting, and presenting findings in a structured way — skills directly relevant to SOC and incident response roles.
+This helped me practice memory forensics, artifact hunting, and presenting findings in a structured way skills directly relevant to SOC and incident response roles.
 
 ---
 
@@ -40,7 +40,7 @@ This helped me practice memory forensics, artifact hunting, and presenting findi
 
 ### Command-Line Arguments
 - `cmdline` returned only the executable path (`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`).  
-- No `-EncodedCommand` flag recovered — a common limitation once processes exit.  
+- No `-EncodedCommand` flag recovered a common limitation once processes exit.  
 
 **MITRE Mapping:**  
 - **T1059.001 – PowerShell** (PowerShell execution observed)  
@@ -92,7 +92,7 @@ This helped me practice memory forensics, artifact hunting, and presenting findi
 ---
 
 ## Lessons Learned
-- `pslist` alone is not reliable — `psscan` is needed for terminated processes.  
+- `pslist` alone is not reliable  `psscan` is needed for terminated processes.  
 - Encoded PowerShell payloads remain recoverable in memory as UTF-16LE.  
 - Even negative findings (like empty `cmdline`) provide valuable context.  
 - Practiced SOC-relevant skills: process hunting, payload recovery, safe offline decoding, and structured DFIR reporting.  
