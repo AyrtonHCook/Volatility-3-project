@@ -19,6 +19,9 @@ This helped me practice memory forensics, artifact hunting, and documenting find
 - `base64` + `iconv` for safe offline decoding
 - `sha256sum` for image integrity
 
+**Screenshot:**  
+![Volatility 3 Framework Info](screenshots/01-frameworkinfo.png)
+
 ---
 
 ## Investigation
@@ -29,8 +32,8 @@ This helped me practice memory forensics, artifact hunting, and documenting find
 - `pstree` showed the lineage: parent PID 4308, child `conhost.exe`.
 
 **Screenshots:**  
-- `psscan_pid4296.png`  
-- `pstree_pid4296.png`
+![psscan output showing PID 4296](screenshots/02-psscan_pid4296.png)  
+![pstree output showing PID 4296](screenshots/03-pstree_pid4296.png)
 
 ---
 
@@ -39,7 +42,7 @@ This helped me practice memory forensics, artifact hunting, and documenting find
 - No `-EncodedCommand` present, a common limitation when processes exit.
 
 **Screenshot:**  
-- `04-cmdline-hits.png`
+![cmdline output](screenshots/04-cmdline-hits.png)
 
 ---
 
@@ -48,7 +51,7 @@ This helped me practice memory forensics, artifact hunting, and documenting find
 - Found repeated instances of PowerShell launched with `-EncodedCommand` and a long base64 blob.
 
 **Screenshot:**  
-- `05-strings-encodedcommand.png`
+![strings output showing EncodedCommand](screenshots/05-strings-encodedcommand.png)
 
 ---
 
@@ -63,7 +66,7 @@ Start-Sleep -Seconds 600
 ```
 
 **Screenshot:**  
-- `06-decoded_payload_snippet.png`
+![Decoded payload snippet](screenshots/06-decoded_payload_snippet.png)
 
 ---
 
