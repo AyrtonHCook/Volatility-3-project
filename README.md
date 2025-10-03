@@ -1,6 +1,5 @@
 # Windows Memory Forensics: Volatility 3
 
-**Audience:** Entry-level SOC / DFIR reviewers and recruiters.  
 **Goal:** Demonstrate memory forensic analysis of a Windows 10 dump using Volatility 3.  
 **Skills Gained:** Process discovery, command-line artefact recovery, decoding payloads, MITRE mapping.
 
