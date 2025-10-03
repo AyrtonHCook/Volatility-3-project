@@ -44,7 +44,7 @@ Start-Sleep -Seconds 600
 
 ---
 
-**Key evidence - Decoded payload
+**Key evidence - Decoded payload**
 ![Decoded payload snippet](screenshots/06-decoded_payload_snippet.png)
 
 ---
