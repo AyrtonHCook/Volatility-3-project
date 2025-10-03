@@ -39,12 +39,13 @@ Start-Sleep -Seconds 600
 ## Results
 
 - Recovered terminated PowerShell process (PID 4296) and evidence of encoded command execution.  
-- Extracted and decoded the payload into `/artifacts/decoded_payload.txt`.  
+- Extracted and decoded the payload into `/artefacts/decoded_payload.txt`.  
 - Observed a long sleep in the payload (behaviour consistent with sandbox-evasion techniques).
 
 ---
 
 **Key evidence - Decoded payload**
+![Psscan snippet](screenshots/02-psscan_pid4296.png)
 ![Decoded payload snippet](screenshots/06-decoded_payload_snippet.png)
 
 ---
