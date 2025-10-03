@@ -1,113 +1,71 @@
-# Windows Memory Forensics: Volatility 3 Analysis
+# Windows Memory Forensics: Volatility 3
 
-## Project Overview
-For this project I used [Volatility 3](https://github.com/volatilityfoundation/volatility3) on REMnux to investigate a Windows 10 memory dump.  
-The aim was to simulate a DFIR workflow: identify suspicious processes, recover command-line arguments, extract encoded payloads, and decode them safely.  
-This helped me practice memory forensics, artifact hunting, and presenting findings in a structured way skills directly relevant to SOC and incident response roles.
+**Goal.** I analysed `memdump.dmp` to find and decode PowerShell `-EncodedCommand` activity.
 
----
-
-## Setup
-**Environment**
-- Host: REMnux VM with Volatility 3 Framework 2.7.0
-- Image: Windows 10 memory dump (`memdump.dmp`)
-- Target: `powershell.exe` (PID 4296)
-
-**Tools**
-- Volatility 3 (plugins: `psscan`, `pstree`, `cmdline`, `strings`)
-- `strings` for UTF-16LE scanning
-- `base64` + `iconv` for safe offline decoding
-- `sha256sum` for image integrity
+**Key skills.** Memory forensics, process hunting with Volatility, payload extraction and safe offline decoding.
 
 ---
 
-## Investigation
-
-### Process Discovery
-- `pslist` showed no active PowerShell process.  
-- `psscan` recovered PID 4296 (`powershell.exe`) that had already exited.  
-- `pstree` confirmed the lineage: parent PID 4308, child `conhost.exe`.  
-
-**MITRE Mapping:**  
-- **T1057 – Process Discovery** (attacker visibility of running processes)  
-- **T1059.001 – Command and Scripting Interpreter: PowerShell**  
-
-**Screenshots:**  
-- `02-psscan_pid4296.png`  
-- `03-pstree_pid4296.png`
+## Environment & context
+Analysis performed on REMnux using Volatility 3. Target image: `memdump.dmp`.
 
 ---
 
-### Command-Line Arguments
-- `cmdline` returned only the executable path (`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`).  
-- No `-EncodedCommand` flag recovered a common limitation once processes exit.  
+## Quick reproduction
 
-**MITRE Mapping:**  
-- **T1059.001 – PowerShell** (PowerShell execution observed)  
-
-**Screenshot:**  
-- `04-cmdline-hits.png`
+```bash
+python3 vol.py -f memdump.dmp windows.psscan
+python3 vol.py -f memdump.dmp windows.pstree
+strings -el memdump.dmp | grep -i EncodedCommand
+```
 
 ---
 
-### EncodedCommand Discovery
-- UTF-16LE string sweep across the image revealed repeated PowerShell executions with `-EncodedCommand` and a long base64 blob.  
+## What I found
 
-**MITRE Mapping:**  
-- **T1027 – Obfuscated/Encrypted File or Information** (use of Base64 to hide payloads)  
-- **T1059.001 – PowerShell** (use of encoded PowerShell commands)  
+- `psscan` recovered a terminated `powershell.exe` (PID 4296).  
+- `strings` showed repeated `-EncodedCommand` invocations containing a base64 blob.  
+- I extracted and decoded the blob offline (UTF-16LE → UTF-8). The decoded payload created `ps_test.txt` and used `Start-Sleep -Seconds 600`.
 
-**Screenshot:**  
-- `05-strings-encodedcommand.png`
-
----
-
-### Decoded Payload
-- Extracted the base64 blob and decoded safely offline (UTF-16LE → UTF-8).  
-- Payload was a benign test script that wrote a marker file (`ps_test.txt`) and then slept for 600 seconds.  
-
-**MITRE Mapping:**  
-- **T1059 – Command and Scripting Interpreter**  
-- **T1070.004 – Indicator Removal on Host: File Deletion** (if attackers later remove files created)  
-- **T1497.001 – Virtualization/Sandbox Evasion: System Checks** (use of `Start-Sleep` to evade sandbox timeouts)  
-
-**Screenshot:**  
-- `06-decoded_payload_snippet.png`
+**Decoded payload (trimmed example):**
+```powershell
+New-Item -Path C:\temp\ps_test.txt -ItemType File -Force
+Start-Sleep -Seconds 600
+# (payload trimmed)
+```
 
 ---
 
 ## Results
-- `psscan` recovered the hidden PowerShell process (PID 4296).  
-- `pstree` confirmed parent/child relationships.  
-- Strings analysis uncovered the encoded PowerShell payload.  
-- Decoded script confirmed expected behavior (file write + sleep).  
-- SHA256 hash recorded for image integrity.  
 
-**MITRE Summary:**  
-- **T1059.001 – PowerShell**  
-- **T1027 – Obfuscated/Encoded Commands**  
-- **T1497.001 – Sandbox Evasion (sleep)**  
-- **T1057 – Process Discovery**  
+- Recovered terminated PowerShell process (PID 4296) and evidence of encoded command execution.  
+- Extracted and decoded the payload into `/artifacts/decoded_payload.txt`.  
+- Observed a long sleep in the payload (behaviour consistent with sandbox-evasion techniques).
 
 ---
 
-## Lessons Learned
-- `pslist` alone is not reliable  `psscan` is needed for terminated processes.  
-- Encoded PowerShell payloads remain recoverable in memory as UTF-16LE.  
-- Even negative findings (like empty `cmdline`) provide valuable context.  
-- Practiced SOC-relevant skills: process hunting, payload recovery, safe offline decoding, and structured DFIR reporting.  
+**Key evidence - Decoded payload
+![Decoded payload snippet](screenshots/hero_decoded_payload.png)
 
 ---
 
-## Next Steps
-- Extend analysis to persistence detection (registry hives, scheduled tasks).  
-- Correlate findings with enterprise threat hunting (MITRE ATT&CK mapping).  
-- Apply Yara rules to memory dumps for known malware families.  
-- Compare dumps pre- and post-infection to demonstrate attack progression.  
+## Artefacts
+
+`/artifacts/decoded_payload.txt`
 
 ---
 
-## Author
-**Ayrton Cook**  
-BSc Computer Science with Year in Industry
-University of East Anglia
+## MITRE ATT&CK mapping
+
+| Tactic          | Technique                                    | Evidence / Notes |
+|-----------------|-----------------------------------------------|------------------|
+| Execution       | T1059.001 - PowerShell                        | Encoded PowerShell observed in process command-line |
+| Defence Evasion | T1027 - Obfuscated / Encoded Commands         | Base64 payload recovered from memory |
+| Defence Evasion | T1497.001 - Virtualization / Sandbox Evasion  | `Start-Sleep -Seconds 600` observed - behaviour consistent with delayed-execution sandbox evasion |
+| Discovery       | T1057 - Process Discovery                     | Hidden/terminated PowerShell recovered with `psscan` |
+
+---
+
+Full walkthrough and expanded outputs: `/docs/volatility-case-study.md`  
+Screenshots: `/screenshots/`  
+Raw artefacts: `/artifacts/`
