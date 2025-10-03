@@ -45,13 +45,13 @@ Start-Sleep -Seconds 600
 ---
 
 **Key evidence - Decoded payload
-![Decoded payload snippet](screenshots/hero_decoded_payload.png)
+![Decoded payload snippet](screenshots/06-decoded_payload_snippet.png)
 
 ---
 
 ## Artefacts
 
-`/artifacts/decoded_payload.txt`
+`/artefacts/decoded_payload.txt`
 
 ---
 
