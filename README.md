@@ -68,4 +68,4 @@ Start-Sleep -Seconds 600
 
 Full walkthrough and expanded outputs: `/docs/volatility-case-study.md`  
 Screenshots: `/screenshots/`  
-Raw artefacts: `/artifacts/`
+Raw artefacts: `/artefacts/`
