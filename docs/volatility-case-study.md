@@ -77,14 +77,20 @@ sha256sum artefacts/07-decoded-payload_utf8.txt
 
 ## Key evidence
 
-1. **Process recovery:** `psscan` recovered a terminated `powershell.exe` with PID **4296**.  
-   (Screenshot: `/screenshots/02-psscan_pid4296.png`)  
+1. **Process recovery:** `psscan` recovered a terminated `powershell.exe` with PID **4296**.
+   (Screenshot: `/screenshots/02-psscan_pid4296.png`)
 
-2. **Command-line discovery:** `strings -el` revealed `-EncodedCommand` usage and a long Base64 blob present in memory.  
-   (Screenshot: `/screenshots/05-strings-encodedcommand.png`)  
+   ![Volatility psscan output highlighting the recovered powershell.exe process with PID 4296.](../screenshots/02-psscan_pid4296.png)
+
+2. **Command-line discovery:** `strings -el` revealed `-EncodedCommand` usage and a long Base64 blob present in memory.
+   (Screenshot: `/screenshots/05-strings-encodedcommand.png`)
+
+   ![strings -el output demonstrating discovery of the -EncodedCommand argument in memory.](../screenshots/05-strings-encodedcommand.png)
 
 3. **Decoded payload (trimmed):** The decoded content created a marker file and included `Start-Sleep -Seconds 600`.
    (Screenshot: `/screenshots/06-decoded_payload_snippet.png`; artefact: `/artefacts/07-decoded-payload_utf8.txt`, sha256: `a9da4a8811b27c5e0677d10509e4dd8165f43637671a24f32fedd9e063ca1003`)
+
+   ![Decoded payload snippet showing creation of DFIR TEST RUN marker file and Start-Sleep invocation.](../screenshots/06-decoded_payload_snippet.png)
 
 **Trimmed decoded payload (example):**
 
@@ -137,10 +143,16 @@ Start-Sleep -Seconds 600
 ## Artefacts & screenshots
 
 * `/artefacts/07-decoded-payload_utf8.txt` — decoded payload (sha256: `a9da4a8811b27c5e0677d10509e4dd8165f43637671a24f32fedd9e063ca1003`)
-* `/screenshots/02-psscan_pid4296.png` — psscan output showing PID 4296  
-* `/screenshots/03-pstree_pid4296.png` — process tree context  
-* `/screenshots/05-strings-encodedcommand.png` — strings output showing `-EncodedCommand`  
-* `/screenshots/06-decoded_payload_snippet.png` — decoded payload snippet (trimmed)  
+* `/screenshots/02-psscan_pid4296.png` — psscan output showing PID 4296
+* `/screenshots/03-pstree_pid4296.png` — process tree context
+* `/screenshots/05-strings-encodedcommand.png` — strings output showing `-EncodedCommand`
+* `/screenshots/06-decoded_payload_snippet.png` — decoded payload snippet (trimmed)
+
+![Volatility framework banner showing plugin discovery information.](../screenshots/01-frameworkinfo.png)
+
+![Volatility pstree output providing parent-child context for the recovered PowerShell process.](../screenshots/03-pstree_pid4296.png)
+
+![Volatility cmdline plugin output illustrating command-line collection results around the PowerShell process.](../screenshots/04-cmdline-hits.png)
 
 ---
 
