@@ -1,0 +1,2 @@
+Write-Output "DFIR TEST RUN" | Out-File C:\Temp\ps_test.txt -Encoding UTF8
+Start-Sleep -Seconds 600

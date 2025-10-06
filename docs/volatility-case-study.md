@@ -45,34 +45,33 @@ All analysis steps are reproducible with the commands below.
 
 ```bash
 # recover terminated processes
-vol3 -f memdump.dmp windows.psscan
+vol3 -f memdump.dmp windows.psscan > artefacts/02-psscan.txt
 
 # process tree for context
-vol3 -f memdump.dmp windows.pstree
+vol3 -f memdump.dmp windows.pstree > artefacts/03-pstree.txt
 
 # dump command-line arguments (if present)
-vol3 -f memdump.dmp windows.cmdline
+vol3 -f memdump.dmp windows.cmdline > artefacts/04-cmdline.txt
 
 # search for EncodedCommand strings in memory (UTF-16LE)
-strings -el memdump.dmp | grep -i EncodedCommand > decoded_strings.txt
+strings -el memdump.dmp | egrep -i 'encodedcommand|-enc\\b|FromBase64String|IEX' > artefacts/05-strings-utf16-hits.txt
 
-# extract the base64 blob (manual or scripted) and save to file: encoded_blob.b64
-# decode safely offline (example using python)
+# extract the base64 blob (manual or scripted) and save to file
+grep -oE "[A-Za-z0-9+/=]{40,}" artefacts/05-strings-utf16-hits.txt | head -n 1 > artefacts/06-encoded-command.b64
+
+# decode safely offline (Python handles UTF-16LE conversion)
 python3 - <<'PY'
-import base64
-blob = open('encoded_blob.b64','rb').read()
-decoded = base64.b64decode(blob)
-open('artefacts/decoded_payload.txt','wb').write(decoded)
+import base64, pathlib
+payload = base64.b64decode(pathlib.Path('artefacts/06-encoded-command.b64').read_text().strip())
+decoded = payload.decode('utf-16le')
+pathlib.Path('artefacts/07-decoded-payload_utf8.txt').write_text(decoded)
 PY
 
-# convert UTF-16LE to UTF-8 if necessary
-iconv -f UTF-16LE -t UTF-8 artefacts/decoded_payload.txt > artefacts/decoded_payload_utf8.txt
-
 # compute sha256 for verification
-sha256sum artefacts/decoded_payload_utf8.txt
+sha256sum artefacts/07-decoded-payload_utf8.txt
 ```
 
-> Note: extraction of the encoded blob may require manual trimming of surrounding characters depending on how the string was recovered. I trimmed surrounding quotes during extraction in this analysis — see `/docs/extraction_notes.md` for the helper script.
+> Note: extraction of the encoded blob may require manual trimming of surrounding characters depending on how the string was recovered.
 
 ---
 
@@ -84,13 +83,13 @@ sha256sum artefacts/decoded_payload_utf8.txt
 2. **Command-line discovery:** `strings -el` revealed `-EncodedCommand` usage and a long Base64 blob present in memory.  
    (Screenshot: `/screenshots/05-strings-encodedcommand.png`)  
 
-3. **Decoded payload (trimmed):** The decoded content created a marker file and included `Start-Sleep -Seconds 600`.  
-   (Screenshot: `/screenshots/06-decoded_payload_snippet.png`; artefact: `/artefacts/decoded_payload.txt`, sha256: `REPLACE_WITH_SHA256`)  
+3. **Decoded payload (trimmed):** The decoded content created a marker file and included `Start-Sleep -Seconds 600`.
+   (Screenshot: `/screenshots/06-decoded_payload_snippet.png`; artefact: `/artefacts/07-decoded-payload_utf8.txt`, sha256: `a9da4a8811b27c5e0677d10509e4dd8165f43637671a24f32fedd9e063ca1003`)
 
 **Trimmed decoded payload (example):**
 
 ```powershell
-New-Item -Path C:\temp\ps_test.txt -ItemType File -Force
+Write-Output "DFIR TEST RUN" | Out-File C:\Temp\ps_test.txt -Encoding UTF8
 Start-Sleep -Seconds 600
 # (payload trimmed for brevity)
 ```
@@ -131,13 +130,13 @@ Start-Sleep -Seconds 600
 1. Correlate memory findings with disk and network captures from the same host/time window.  
 2. Hunt in endpoint logs and SIEM for `-EncodedCommand` and `Start-Sleep` usage.  
 3. Add memory-based scans for common encoded-command prefixes and log long sleep timers.  
-4. Preserve `/artefacts/decoded_payload.txt` and record its sha256 so reviewers can reproduce decoding.  
+4. Preserve `/artefacts/07-decoded-payload_utf8.txt` and record its sha256 so reviewers can reproduce decoding.
 
 ---
 
 ## Artefacts & screenshots
 
-* `/artefacts/decoded_payload.txt` — decoded payload (sha256: `REPLACE_WITH_SHA256`)  
+* `/artefacts/07-decoded-payload_utf8.txt` — decoded payload (sha256: `a9da4a8811b27c5e0677d10509e4dd8165f43637671a24f32fedd9e063ca1003`)
 * `/screenshots/02-psscan_pid4296.png` — psscan output showing PID 4296  
 * `/screenshots/03-pstree_pid4296.png` — process tree context  
 * `/screenshots/05-strings-encodedcommand.png` — strings output showing `-EncodedCommand`  
@@ -149,7 +148,7 @@ Start-Sleep -Seconds 600
 
 * All commands above were executed on REMnux with Volatility 3 (`vol3` entry point).  
 * Exact plugin paths and versions should be recorded in the repo for full reproducibility.  
-* Include `/artefacts/decoded_payload.txt` and its SHA256 in the repo so others can verify decoding steps.  
+* Include `/artefacts/07-decoded-payload_utf8.txt` and its SHA256 in the repo so others can verify decoding steps.
 
 ---
 
@@ -170,7 +169,7 @@ Start-Sleep -Seconds 600
 **Decoded payload (trimmed)**
 
 ```powershell
-New-Item -Path C:\temp\ps_test.txt -ItemType File -Force
+Write-Output "DFIR TEST RUN" | Out-File C:\Temp\ps_test.txt -Encoding UTF8
 Start-Sleep -Seconds 600
 # additional script content trimmed
 ```
