@@ -108,12 +108,12 @@ Start-Sleep -Seconds 600
 
 ## MITRE ATT&CK mapping (detailed)
 
-| Tactic          | Technique                                    | Evidence                                                                                       |
-|-----------------|----------------------------------------------|------------------------------------------------------------------------------------------------|
-| Execution       | **T1059.001 — PowerShell**                   | Encoded PowerShell observed in command-line recovered from memory                              |
-| Defence Evasion | **T1027 — Obfuscated / Encoded Commands**    | Base64-encoded payload recovered and decoded offline                                           |
-| Defence Evasion | **T1497.001 — Sandbox Evasion (Sleep)**      | `Start-Sleep -Seconds 600` observed in decoded payload — consistent with delayed execution     |
-| Analyst method  | **T1057 — Process Discovery**                | `psscan` used by analyst to recover terminated process (PowerShell PID 4296)                   |
+| Tactic          | Technique                                 | Evidence                                                                 |
+| --------------- | ------------------------------------------ | ------------------------------------------------------------------------ |
+| Execution       | **T1059.001 — PowerShell**                | Encoded PowerShell observed in command-line recovered from memory        |
+| Defence Evasion | **T1027 — Obfuscated / Encoded Commands** | Base64-encoded payload recovered and decoded offline                     |
+| Defence Evasion | **T1497.001 — Sandbox Evasion (Sleep)**   | `Start-Sleep -Seconds 600` observed in decoded payload — delayed action  |
+| Analyst method  | **T1057 — Process Discovery**             | `psscan` used by analyst to recover the terminated PowerShell PID (4296) |
 
 ---
 

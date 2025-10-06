@@ -4,7 +4,7 @@
 This project was part of my ongoing cybersecurity learning and covers memory forensics using Volatility 3.
 I examined a Windows 10 memory image (`memdump.dmp`) to find and decode an obfuscated PowerShell `-EncodedCommand`.
 After decoding the Base64 payload offline, I discovered a harmless script that created a small text file and paused for ten minutes.
-Although simple, this behaviour resembles typical sandbox evasion techniques used by real attackers.
+That behaviour, while simple, resembles typical sandbox evasion techniques used by real attackers.
 
 ---
 
