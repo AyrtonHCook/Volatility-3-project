@@ -77,14 +77,30 @@ sha256sum artefacts/07-decoded-payload_utf8.txt
 
 ## Key evidence
 
-1. **Process recovery:** `psscan` recovered a terminated `powershell.exe` with PID **4296**.  
-   (Screenshot: `/screenshots/02-psscan_pid4296.png`)  
+1. **Process recovery:** `psscan` recovered a terminated `powershell.exe` with PID **4296**.
+   (Screenshot: `/screenshots/02-psscan_pid4296.png`)
 
-2. **Command-line discovery:** `strings -el` revealed `-EncodedCommand` usage and a long Base64 blob present in memory.  
-   (Screenshot: `/screenshots/05-strings-encodedcommand.png`)  
+   ![Volatility psscan output with PID 4296 highlighted](../screenshots/02-psscan_pid4296.png)
 
-3. **Decoded payload (trimmed):** The decoded content created a marker file and included `Start-Sleep -Seconds 600`.
+2. **Process context:** `pstree` shows the parent-child chain around the terminated PowerShell instance for additional context.
+   (Screenshot: `/screenshots/03-pstree_pid4296.png`)
+
+   ![Volatility pstree output showing the powershell.exe lineage](../screenshots/03-pstree_pid4296.png)
+
+3. **Encoded command discovery:** `strings -el` output highlights `-EncodedCommand` usage and a long Base64 blob present in memory.
+   (Screenshot: `/screenshots/05-strings-encodedcommand.png`)
+
+   ![strings output showing the -EncodedCommand usage and Base64 blob](../screenshots/05-strings-encodedcommand.png)
+
+4. **Command-line hits:** `windows.cmdline` plugin retains traces of the executed PowerShell command even after termination, providing pivot points for further hunting.
+   (Screenshot: `/screenshots/04-cmdline-hits.png`)
+
+   ![Volatility cmdline plugin output highlighting the encoded PowerShell invocation](../screenshots/04-cmdline-hits.png)
+
+5. **Decoded payload (trimmed):** The decoded content created a marker file and included `Start-Sleep -Seconds 600`.
    (Screenshot: `/screenshots/06-decoded_payload_snippet.png`; artefact: `/artefacts/07-decoded-payload_utf8.txt`, sha256: `a9da4a8811b27c5e0677d10509e4dd8165f43637671a24f32fedd9e063ca1003`)
+
+   ![Decoded PowerShell payload snippet showing marker file creation and Start-Sleep](../screenshots/06-decoded_payload_snippet.png)
 
 **Trimmed decoded payload (example):**
 
@@ -108,12 +124,12 @@ Start-Sleep -Seconds 600
 
 ## MITRE ATT&CK mapping (detailed)
 
-| Tactic          | Technique                                    | Evidence                                                                                       |
-|-----------------|----------------------------------------------|------------------------------------------------------------------------------------------------|
-| Execution       | **T1059.001 — PowerShell**                   | Encoded PowerShell observed in command-line recovered from memory                              |
-| Defence Evasion | **T1027 — Obfuscated / Encoded Commands**    | Base64-encoded payload recovered and decoded offline                                           |
-| Defence Evasion | **T1497.001 — Sandbox Evasion (Sleep)**      | `Start-Sleep -Seconds 600` observed in decoded payload — consistent with delayed execution     |
-| Analyst method  | **T1057 — Process Discovery**                | `psscan` used by analyst to recover terminated process (PowerShell PID 4296)                   |
+| Tactic          | Technique                                 | Evidence                                                                 |
+| --------------- | ------------------------------------------ | ------------------------------------------------------------------------ |
+| Execution       | **T1059.001 — PowerShell**                | Encoded PowerShell observed in command-line recovered from memory        |
+| Defence Evasion | **T1027 — Obfuscated / Encoded Commands** | Base64-encoded payload recovered and decoded offline                     |
+| Defence Evasion | **T1497.001 — Sandbox Evasion (Sleep)**   | `Start-Sleep -Seconds 600` observed in decoded payload — delayed action  |
+| Analyst method  | **T1057 — Process Discovery**             | `psscan` used by analyst to recover the terminated PowerShell PID (4296) |
 
 ---
 
