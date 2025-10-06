@@ -40,8 +40,7 @@ I wanted to learn how to extract evidence directly from a memory image and under
 SHA-256 checksums (for integrity):
 
 ```
-memdump.dmp → artefacts/memdump.sha256
-decoded_payload_utf8.txt → artefacts/decoded_payload.sha256
+artefacts/07-decoded-payload_utf8.txt → a9da4a8811b27c5e0677d10509e4dd8165f43637671a24f32fedd9e063ca1003
 ```
 
 ---
@@ -54,20 +53,27 @@ IMG="memdump.dmp"
 OUT="artefacts"
 mkdir -p "$OUT" screenshots
 
+# Tool & environment validation
+vol3 -f "$IMG" windows.info > "$OUT/01-tool-check.txt"
+
 # Process discovery
-vol3 -f "$IMG" windows.psscan > "$OUT/01-psscan.txt"
-vol3 -f "$IMG" windows.pstree > "$OUT/02-pstree.txt"
+vol3 -f "$IMG" windows.psscan > "$OUT/02-psscan.txt"
+vol3 -f "$IMG" windows.pstree > "$OUT/03-pstree.txt"
 
 # Command-line inspection
-vol3 -f "$IMG" windows.cmdline > "$OUT/03-cmdline.txt"
+vol3 -f "$IMG" windows.cmdline > "$OUT/04-cmdline.txt"
 
 # UTF-16LE string sweep to locate EncodedCommand
-strings -a -el "$IMG" | egrep -i 'encodedcommand|-enc\b|FromBase64String|IEX' > "$OUT/04-strings_utf16_hits.txt"
+strings -a -el "$IMG" | egrep -i 'encodedcommand|-enc\b|FromBase64String|IEX' > "$OUT/05-strings-utf16-hits.txt"
 
 # Extract and decode Base64 blob
-grep -oE "[A-Za-z0-9+/=]{40,}" "$OUT/04-strings_utf16_hits.txt" | sort -u > "$OUT/05-encoded_candidates_raw.txt"
-head -n 1 "$OUT/05-encoded_candidates_raw.txt" > "$OUT/05-encoded_blob.b64"
-base64 -d "$OUT/05-encoded_blob.b64" | iconv -f UTF-16LE -t UTF-8 > "$OUT/06-decoded_payload_utf8.txt"
+grep -oE "[A-Za-z0-9+/=]{40,}" "$OUT/05-strings-utf16-hits.txt" | head -n 1 > "$OUT/06-encoded-command.b64"
+python3 - <<'PY'
+import base64, pathlib
+payload = base64.b64decode(pathlib.Path("$OUT/06-encoded-command.b64").read_text().strip())
+decoded = payload.decode('utf-16le')
+pathlib.Path("$OUT/07-decoded-payload_utf8.txt").write_text(decoded)
+PY
 ```
 
 ---
@@ -95,12 +101,13 @@ Even though it was harmless, the pattern was very similar to what analysts would
 
 | Evidence                                     | Description                                       |
 | -------------------------------------------- | ------------------------------------------------- |
-| `artefacts/01-psscan.txt`                    | Terminated process list (PID 4296)                |
-| `artefacts/02-pstree.txt`                    | Process tree confirming parent-child relationship |
-| `artefacts/03-cmdline.txt`                   | Command-line output with executable path          |
-| `artefacts/04-strings_utf16_hits.txt`        | Encoded PowerShell command discovered in memory   |
-| `artefacts/05-encoded_blob.b64`              | Sanitized Base64 blob                             |
-| `artefacts/06-decoded_payload_utf8.txt`      | Decoded PowerShell payload                        |
+| `artefacts/01-tool-check.txt`                | Volatility 3 framework information and plugins    |
+| `artefacts/02-psscan.txt`                    | Terminated process list (PID 4296)                |
+| `artefacts/03-pstree.txt`                    | Process tree confirming parent-child relationship |
+| `artefacts/04-cmdline.txt`                   | Command-line output with executable path          |
+| `artefacts/05-strings-utf16-hits.txt`        | Encoded PowerShell command discovered in memory   |
+| `artefacts/06-encoded-command.b64`           | Sanitized Base64 blob                             |
+| `artefacts/07-decoded-payload_utf8.txt`      | Decoded PowerShell payload                        |
 | `screenshots/02-psscan_pid4296.png`          | Evidence of process recovery                      |
 | `screenshots/03-pstree_pid4296.png`          | Process lineage visual                            |
 | `screenshots/05-strings-encodedcommand.png`  | Encoded command found in memory                   |
@@ -141,7 +148,7 @@ Even simple encoded commands can reveal intent once decoded safely offline.
 ## Case Study
 
 A more detailed walkthrough with command outputs and screenshots is available in:
-[`/docs/CASESTUDY.md`](docs/CASESTUDY.md)
+[`docs/volatility-case-study.md`](docs/volatility-case-study.md)
 
 ---
 
