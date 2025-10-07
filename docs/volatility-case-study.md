@@ -1,13 +1,13 @@
 # Case Study — Windows Memory Forensics (Volatility 3)
 
-**Date:** 05-06-2025 
-**Author:** Ayrton Cook  
+**Date:** 05-06-2025
+**Author:** Ayrton Cook
 
 ---
 
 ## Executive summary
 
-I analysed a Windows 10 memory image (`memdump.dmp`) on REMnux using Volatility 3. I recovered a terminated `powershell.exe` (PID 4296), extracted a Base64 `-EncodedCommand` blob, decoded it offline, and found it created a marker file and used `Start-Sleep -Seconds 600`. The behaviour is consistent with delayed-execution sandbox-evasion. The decoded payload in this lab was benign, but the pattern is relevant for triage and detection.
+As part of my cybersecurity studies I analysed a Windows 10 memory image (`memdump.dmp`) on REMnux using Volatility 3. I recovered a terminated `powershell.exe` (PID 4296), extracted a Base64 `-EncodedCommand` blob, decoded it offline, and observed that the script created a marker file and invoked `Start-Sleep -Seconds 600`. The behaviour reflects delayed-execution sandbox evasion. While the decoded payload in this lab remained benign, the analytical pattern is representative of techniques defenders must triage and detect.
 
 ---
 
@@ -15,9 +15,9 @@ I analysed a Windows 10 memory image (`memdump.dmp`) on REMnux using Volatility 
 
 **Scenario:** Post-incident forensic triage of a Windows 10 host memory capture. The objective was to determine whether PowerShell was used to execute obfuscated commands from memory and, if so, recover and analyse the payload.
 
-**Scope:** Volatile memory only (no disk analysis). The analysis focused on process listings, command-lines, string recovery, payload extraction, and safe offline decoding.
+**Scope:** Volatile memory only (no disk analysis). The analysis focused on process listings, command-line reconstruction, string recovery, payload extraction, and safe offline decoding.
 
-**Assurance:** All decoding was performed offline on an isolated analysis VM. Raw artefacts and screenshots are retained under `/artefacts/` and `/screenshots/`.
+**Assurance:** All decoding was performed offline on an isolated analysis VM. Raw artefacts and screenshots are retained under `/artefacts/` and `/screenshots/` for academic review.
 
 ---
 
@@ -32,12 +32,12 @@ I analysed a Windows 10 memory image (`memdump.dmp`) on REMnux using Volatility 
 
 ## Tools used
 
-* Volatility 3 (`vol3`) — core plugins: `psscan`, `pstree`, `cmdline`, `strings`  
-* `strings` (GNU binutils) with UTF-16LE option (`-el`)  
-* `base64`, `iconv` / Python for safe decoding  
-* `sha256sum` for artefact integrity checks  
+* Volatility 3 (`vol3`) — core plugins: `psscan`, `pstree`, `cmdline`, `strings`
+* `strings` (GNU binutils) with UTF-16LE option (`-el`)
+* `base64`, `iconv`, or Python for safe decoding
+* `sha256sum` for artefact integrity checks
 
-All analysis steps are reproducible with the commands below.
+All analysis steps remain reproducible through the commands below, supporting academic replication.
 
 ---
 
@@ -104,11 +104,11 @@ Start-Sleep -Seconds 600
 
 ## Findings & interpretation
 
-* A terminated PowerShell process (PID 4296) executed with a Base64 `-EncodedCommand` argument. This shows that encoded commands were loaded into PowerShell and persisted in memory after process termination.  
+* A terminated PowerShell process (PID 4296) executed with a Base64 `-EncodedCommand` argument, demonstrating that encoded commands can persist within memory beyond process termination.
 
-* The decoded payload performed benign operations in this lab instance (wrote `ps_test.txt`) and used `Start-Sleep -Seconds 600`. Long sleep timers are a recognised sandbox-evasion technique (delayed execution) and align with MITRE ATT&CK T1497.001.  
+* The decoded payload performed benign operations in this lab instance (wrote `ps_test.txt`) and used `Start-Sleep -Seconds 600`. Prolonged sleep timers are a recognised sandbox-evasion technique (delayed execution) and align with MITRE ATT&CK T1497.001.
 
-* The presence of encoded commands (T1027) with PowerShell execution (T1059.001) is a common attacker TTP combination — worth flagging for further investigation on disk, network, and persistence artefacts.  
+* The presence of encoded commands (T1027) alongside PowerShell execution (T1059.001) is a common attacker TTP combination and should be flagged for extended investigation across disk, network, and persistence artefacts.
 
 ---
 
@@ -125,18 +125,18 @@ Start-Sleep -Seconds 600
 
 ## Limitations & caveats
 
-* Memory analysis cannot prove actions performed after process exit (e.g. network callbacks or file changes) without disk or network artefacts.  
-* Encoding extraction is sensitive to string boundaries; partial blobs can result in decoding errors. Document offsets and keep raw captures to verify.  
-* Long sleep usage can also appear in benign automation — corroboration is required before drawing conclusions.  
+* Memory analysis cannot prove actions performed after process exit (e.g. network callbacks or file changes) without corresponding disk or network artefacts.
+* Encoding extraction is sensitive to string boundaries; partial blobs can result in decoding errors. Document offsets and keep raw captures to verify.
+* Extended sleep usage can also appear in benign automation, so corroboration is required before drawing conclusions.
 
 ---
 
 ## Recommendations
 
-1. Correlate memory findings with disk and network captures from the same host/time window.  
-2. Hunt in endpoint logs and SIEM for `-EncodedCommand` and `Start-Sleep` usage.  
-3. Add memory-based scans for common encoded-command prefixes and log long sleep timers.  
-4. Preserve `/artefacts/07-decoded-payload_utf8.txt` and record its sha256 so reviewers can reproduce decoding.
+1. Correlate memory findings with disk and network captures from the same host/time window.
+2. Hunt in endpoint logs and SIEM for `-EncodedCommand` and `Start-Sleep` usage.
+3. Add memory-based scans for common encoded-command prefixes and log long sleep timers.
+4. Preserve `/artefacts/07-decoded-payload_utf8.txt` and record its sha256 so reviewers can reproduce decoding within an academic or professional review board.
 
 ---
 
@@ -158,9 +158,9 @@ Start-Sleep -Seconds 600
 
 ## Reproducibility notes
 
-* All commands above were executed on REMnux with Volatility 3 (`vol3` entry point).  
-* Exact plugin paths and versions should be recorded in the repo for full reproducibility.  
-* Include `/artefacts/07-decoded-payload_utf8.txt` and its SHA256 in the repo so others can verify decoding steps.
+* All commands above were executed on REMnux with Volatility 3 (`vol3` entry point).
+* Exact plugin paths and versions should be recorded in the repository for full reproducibility.
+* Include `/artefacts/07-decoded-payload_utf8.txt` and its SHA256 in the repository so peers can verify decoding steps.
 
 ---
 
