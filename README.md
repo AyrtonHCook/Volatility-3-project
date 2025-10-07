@@ -1,10 +1,10 @@
 # Windows Memory Forensics: Volatility 3
 
 **Summary:**
-This project was part of my ongoing cybersecurity learning and covers memory forensics using Volatility 3.
-I examined a Windows 10 memory image (`memdump.dmp`) to find and decode an obfuscated PowerShell `-EncodedCommand`.
-After decoding the Base64 payload offline, I discovered a harmless script that created a small text file and paused for ten minutes.
-That behaviour, while simple, resembles typical sandbox evasion techniques used by real attackers.
+This project supports my professional development as a cybersecurity student and documents a structured memory-forensics lab using Volatility 3.
+I analysed a Windows 10 memory image (`memdump.dmp`) to locate and decode an obfuscated PowerShell `-EncodedCommand`.
+Offline Base64 decoding revealed a benign script that generated a text file and paused execution for ten minutes.
+Although the payload was harmless, the workflow mirrors sandbox-evasion behaviours that defenders routinely investigate.
 
 ---
 
@@ -128,13 +128,13 @@ Even though it was harmless, the pattern was very similar to what analysts would
 
 ## Lessons Learned
 
-This was my first full memory analysis from start to finish using Volatility 3.
-Some lessons that stood out:
+This exercise represented my first end-to-end memory analysis using Volatility 3 in an academic setting.
+Key learning points included:
 
-* Always check for terminated processes using `psscan`, not just `pslist`.
-* PowerShell artifacts are often UTF-16LE, so the correct `strings` encoding flag is essential.
-* Volatility 2 and 3 can coexist, so confirming the correct binary avoids plugin errors.
-* Writing clear, reproducible notes after each step saves a lot of time later when documenting.
+* Verify terminated processes with `psscan` in addition to `pslist` to surface short-lived activity.
+* Treat PowerShell artefacts as UTF-16LE to ensure `strings` extracts complete content.
+* Confirm whether Volatility 2 or 3 is in use to avoid plugin compatibility issues.
+* Maintain disciplined, reproducible notes after every stage to streamline final reporting.
 
 ---
 
